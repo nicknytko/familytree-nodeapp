@@ -1,0 +1,18 @@
+{
+  "name": "family_tree_d3",
+  "version": "1.0.0",
+  "description": "Nytko Family Tree WebApp",
+  "main": "index.js",
+  "scripts": {
+      "migrate-gramps-csv": "node scripts/migrate-gramps-csv.js",
+      "create-db": "node family-db.js"
+  },
+  "author": "Nicolas Nytko",
+  "license": "ISC",
+  "dependencies": {
+    "config": "^1.30.0",
+    "d3-dtree": "^2.0.2",
+    "express": "^4.16.3",
+    "sequelize": "^4.37.4"
+  }
+}

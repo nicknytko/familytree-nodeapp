@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type="text/css">
+ body {
+     font: 10px sans-serif;
+     overflow: hidden;
+ }
+ .linage {
+     fill: none;
+     stroke: #000;
+ }
+ .marriage {
+     fill: none;
+     stroke: black;
+ }
+ .male {
+     background-color: lightblue;
+     border-radius: 2px;
+ }
+ .female {
+     background-color: pink;
+     border-radius: 2px;
+ }
+ p {
+     padding: 5px;
+     margin: 0;
+ }
+</style>
+<script src="/lodash/lodash.min.js"></script>
+<script src="/d3/d3.min.js"></script>
+<script src="/d3-dtree/dTree.min.js"></script>
+<body>
+    <div id="graph"></div>
+    <script>
+     treeJson = d3.json("/api/all", function(error, treeData) {
+      	 dTree.init(treeData, {
+	     target: "#graph",
+	     debug: true,
+             width: window.innerWidth,
+             height: window.innerHeight,
+	     callbacks: {
+		 nodeClick: function(name, extra) {
+		     console.log(name);
+		 },
+                 nodeSorter: function(aName, aExtra, bName, bExtra) {
+                     return Math.sign(Date.parse(aExtra.birth_date) - Date.parse(bExtra.birth_date));
+                 },
+		 textRenderer: function(name, extra, textClass) {
+                     let markup = "<p align=\"center\" class=\"" + textClass + "\">" + name;
+                     if (extra) {
+                         markup += "<br>b. " + extra.birth_date;
+                         if (extra.death_date) {
+                             markup += "<br>d. " + extra.death_date;
+                         }
+                     } 
+                     markup += "</p>";
+                     
+                     return markup;
+		 }
+	     }
+	 });
+     });
+     window.onresize = function() {
+         let svg = document.getElementsByTagName("svg")[0];
+         svg.setAttribute("width", window.innerWidth);
+         svg.setAttribute("height", window.innerHeight);
+     }
+    </script>
+</body>
+</html>
