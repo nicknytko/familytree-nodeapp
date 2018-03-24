@@ -37,7 +37,7 @@
      }
      div.slide {
          position: fixed;
-         overflow: hidden;
+         overflow: scroll;
          
          top: 0px;
          bottom: 0px;
@@ -45,6 +45,7 @@
          
          padding-right: 5px;
          padding-top: 10px;
+         padding-bottom: 10px;
 
          width: 0%;
          transition: width 0.5s;
@@ -74,7 +75,7 @@
     <div class="slide hidden">
         <div class="container">
             <form>
-                <button type="button" class="btn btn-outline-primary" id="task_form_back_btn">Back</button>
+                <button type="button" class="btn btn-outline-primary" id="task_form_back_btn" onclick="slide(0);">Back</button>
                 <button type="button" class="btn btn-outline-primary" id="task_form_update_btn">Update</button>
                 <br><br>
 
@@ -107,8 +108,16 @@
                     <label>Death Date</label>
                     <input class="form-control" type="text" id="form_death_date">
                 </div>
+
+                <h6>Spouse</h6>
+
+                <div class="list-group" id="form_list_spouse">
+                </div><br>
                 
-                <br>
+                <h6>Children</h6>
+                
+                <div class="list-group" id="form_list_children">
+                </div><br>
             </form>
         </div>
     </div>
@@ -135,6 +144,7 @@
      function slide(width) {
          if (width > 0) {
              $("div.slide").removeClass("hidden");
+             $("div.slide").scrollTop(0);
          } else if (width == 0) {
              setTimeout(() => { $("div.slide").addClass("hidden"); }, 500);
          }
@@ -142,10 +152,20 @@
          $("div.slide").css("width", width.toString() + '%');
      }
 
+     function addChildToList(id, list) {
+         let child = $("<a></a>");
+         child.addClass("list-group-item");
+         child.addClass("list-group-item-action");
+         child.attr("href", "#");
+         child.text(treeMap[id].name);
+         
+         $(list).append(child);
+     }
+
      function populateForm(id) {
          let person = treeMap[id];
          let data = person.extra;
-         console.log(data);
+         console.log(person);
 
          $("#form_given_name").val(data.given_name);
          $("#form_last_name").val(data.last_name);
@@ -153,6 +173,24 @@
          $("#form_birth_date").val(data.birth_date);
          $("#form_dead").prop("checked", data.is_dead ? true : false);
          $("#form_death_date").val(data.death_date);
+
+         $("#form_list_spouse").empty()
+         $("#form_list_children").empty()
+         
+         if (data.spouse_id) {
+             addChildToList(data.spouse_id, "#form_list_spouse");
+
+             let children = [];
+             if (!person.marriages) {
+                 children = treeMap[data.spouse_id].marriages[0].children;
+             } else {
+                 children = person.marriages[0].children;
+             }
+
+             for (let i = 0; i < children.length; i++) {
+                 addChildToList(children[i].extra.id, "#form_list_children");
+             }
+         }
      }
      
      treeJson = d3.json("/api/all", function(error, treeData) {
@@ -191,9 +229,9 @@
 		 textRenderer: function(name, extra, textClass) {
                      let markup = "<p align=\"center\" class=\"" + textClass + "\">" + name;
                      if (extra) {
-                         markup += "<br>b. " + extra.birth_date;
+                         markup += "<br/>b. " + extra.birth_date;
                          if (extra.death_date) {
-                             markup += "<br>d. " + extra.death_date;
+                             markup += "<br/>d. " + extra.death_date;
                          }
                      } 
                      markup += "</p>";

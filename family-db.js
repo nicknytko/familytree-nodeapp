@@ -15,7 +15,7 @@ const people = database.define("people", {
     last_name: sequelize.STRING,
     given_name: sequelize.STRING,
     is_male: sequelize.BOOLEAN,
-    is_dead: sequelize.BOOLEAN,
+    is_dead: { type: sequelize.BOOLEAN, defaultValue: false },
     birth_date: sequelize.DATEONLY,
     death_date: sequelize.DATEONLY
 });
@@ -88,13 +88,16 @@ function recurseGenerateTree(tree_root, person_id) {
                 } else {
                     spouse_id = family_result.dataValues.father_id;
                 }
-
+                
+                person.extra.spouse_id = spouse_id;
                 people.findOne({ where: { id: spouse_id } }).then(spouse_result => {
                     person.marriages = [{
-                        spouse: createNodePerson(spouse_result),
+                        spouse: createNodePerson(spouse_result.dataValues),
                         children: []
                     }];
-
+                    person.marriages[0].spouse.extra.spouse_id = person_id;
+                    //console.log(person.marriages[0].spouse);
+                    
                     tree_root.push(person);
                     children.findAll({ where: { family_id: family_result.dataValues.id } }).then(child_result => {
                         for (let child = 0; child < child_result.length; child++) {
