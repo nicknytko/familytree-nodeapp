@@ -6,9 +6,9 @@ var express = require("express"),
 var app = express(),
     router = express.Router();
 
-var git_version = require( "child_process" )
-    .execSync( "git rev-parse HEAD" )
-    .toString( ).trim( );
+var git_version = require("child_process")
+    .execSync("git rev-parse HEAD")
+    .toString().trim();
 
 function modulePath(path) {
     return express.static(__dirname + "/node_modules/" + path);
@@ -26,6 +26,11 @@ router.use(express.static("public"));
 
 router.get("/api/all", (req, res) => {
     res.json(family_db.getJsonTree());
+});
+
+router.put("/api/recache", (req, res) => {
+    family_db.cacheJsonTree();
+    res.json({ status: "ok" });
 });
 
 router.get("/api/version", (req, res) => {

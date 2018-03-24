@@ -35,6 +35,27 @@
          left: 50%;
          transform: translateX(-50%);
      }
+     div.slide {
+         position: fixed;
+         overflow: hidden;
+         
+         top: 0px;
+         bottom: 0px;
+         right: 0px;
+         
+         padding-right: 5px;
+         padding-top: 10px;
+
+         width: 0%;
+         transition: width 0.5s;
+         
+         background-color: white;
+         border-left: gray 1px solid;
+         z-index: 3;
+     }
+     .hidden {
+         display: none;
+     }
     </style>
     <script src="/lodash/lodash.min.js"></script>
     <script src="/d3/d3.min.js"></script>
@@ -50,7 +71,90 @@
             </a>
         </center>
     </div>
+    <div class="slide hidden">
+        <div class="container">
+            <form>
+                <button type="button" class="btn btn-outline-primary" id="task_form_back_btn">Back</button>
+                <button type="button" class="btn btn-outline-primary" id="task_form_update_btn">Update</button>
+                <br><br>
+
+                <div class="form-group">
+                    <label>Given Name</label>
+                    <input class="form-control" type="text" id="form_given_name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input class="form-control" type="text" id="form_last_name">
+                </div>
+
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select class="form-control" id="form_gender">
+                        <option value="1">Male</option>
+                        <option value="0">Female</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Birth Date</label>
+                    <input class="form-control" type="text" id="form_birth_date">
+                </div>
+
+                <div class="form-group">
+                    <label>Dead?</label>
+                    <input type="checkbox" id="form_dead"><br>
+                    <label>Death Date</label>
+                    <input class="form-control" type="text" id="form_death_date">
+                </div>
+                
+                <br>
+            </form>
+        </div>
+    </div>
     <script>
+     var tree = null;
+     var treeMap = [];
+     var currentSlideId = -1;
+
+     function generateTreeMap(treeRoot) {
+         treeMap[treeRoot.extra.id] = treeRoot;
+         
+         if (treeRoot.marriages) {
+             generateTreeMap(treeRoot.marriages[0].spouse);
+             
+             let children = treeRoot.marriages[0].children;
+             if (children) {
+                 for (let i = 0; i < children.length; i++) {
+                     generateTreeMap(children[i]);
+                 }
+             }
+         }
+     }
+
+     function slide(width) {
+         if (width > 0) {
+             $("div.slide").removeClass("hidden");
+         } else if (width == 0) {
+             setTimeout(() => { $("div.slide").addClass("hidden"); }, 500);
+         }
+         
+         $("div.slide").css("width", width.toString() + '%');
+     }
+
+     function populateForm(id) {
+         let person = treeMap[id];
+         let data = person.extra;
+         console.log(data);
+
+         $("#form_given_name").val(data.given_name);
+         $("#form_last_name").val(data.last_name);
+         $("#form_gender").val(data.is_male ? 1 : 0);
+         $("#form_birth_date").val(data.birth_date);
+         $("#form_dead").prop("checked", data.is_dead ? true : false);
+         $("#form_death_date").val(data.death_date);
+     }
+     
      treeJson = d3.json("/api/all", function(error, treeData) {
       	 dTree.init(treeData, {
 	     target: "#graph",
@@ -58,8 +162,28 @@
              width: window.innerWidth,
              height: window.innerHeight,
 	     callbacks: {
-		 nodeClick: function(name, extra) {
-		     console.log(name);
+		 nodeClick: function(name, extra, id) {
+                     let pid = extra.id;
+                     console.log(id);
+                     
+                     if (currentSlideId == pid) {
+                         slide(0);
+                         currentSlideId = -1;
+                     } else {
+                         slide(40);
+                         currentSlideId = pid;
+                         let obj = $("div#node" + id).parent();
+                         let x = parseInt(obj[0].getAttribute("x")) +
+                                 window.innerWidth * 0.60 +
+                                 parseInt(obj[0].getAttribute("width"))/2;
+                         let y = parseInt(obj[0].getAttribute("y"));
+                         
+                         dTree.svg.transition()
+                              .duration(750)
+                              .call(dTree.zoom.translateTo, x, y);
+
+                         populateForm(pid);
+                     }22
 		 },
                  nodeSorter: function(aName, aExtra, bName, bExtra) {
                      return Math.sign(Date.parse(aExtra.birth_date) - Date.parse(bExtra.birth_date));
@@ -78,12 +202,16 @@
 		 }
 	     }
 	 });
+         tree = treeData;
+         generateTreeMap(treeData[0]);
      });
+     
      window.onresize = function() {
          let svg = document.getElementsByTagName("svg")[0];
          svg.setAttribute("width", window.innerWidth);
          svg.setAttribute("height", window.innerHeight);
      }
+     
      $.get("/api/version", (e) => {
          $("#version").text(e.git_small);
      });

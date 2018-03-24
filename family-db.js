@@ -64,12 +64,13 @@ function createNodePerson(data) {
     return {
         name: data.given_name + " " + data.last_name,
         class: (data.is_male ? "male" : "female"),
-        extra: {
-            birth_date: data.birth_date,
-            death_date: data.death_date
-        }
+        extra: data
     };
 }
+
+/* TODO: Make this work without introducing race conditions:
+   somehow update the update when the recursion is finished,
+   which is easier said than done w/ callbacks and promises */
 
 function recurseGenerateTree(tree_root, person_id) {
     people.findOne({ where: { id: person_id } }).then(person_result => {
@@ -109,6 +110,6 @@ function recurseGenerateTree(tree_root, person_id) {
 }
 
 module.exports.cacheJsonTree = function() {
-    var start_id = config.get("tree.start_person");
-    recurseGenerateTree(cached_tree, start_id);
+    cached_tree = [];
+    recurseGenerateTree(cached_tree, config.get("tree.start_person"));
 }
