@@ -157,7 +157,11 @@
          child.addClass("list-group-item");
          child.addClass("list-group-item-action");
          child.attr("href", "#");
+         child.attr("person-id", id);
          child.text(treeMap[id].name);
+         child.click((event) => {
+             openPerson(id);
+         });
          
          $(list).append(child);
      }
@@ -165,7 +169,6 @@
      function populateForm(id) {
          let person = treeMap[id];
          let data = person.extra;
-         console.log(person);
 
          $("#form_given_name").val(data.given_name);
          $("#form_last_name").val(data.last_name);
@@ -192,6 +195,23 @@
              }
          }
      }
+
+     function openPerson(pid) {
+         slide(40);
+         currentSlideId = pid;
+         console.log(pid);
+         let obj = $("p#" + pid + ".nodeText").parent().parent();
+         let x = parseInt(obj[0].getAttribute("x")) +
+                 window.innerWidth * 0.60 +
+                 parseInt(obj[0].getAttribute("width"))/2;
+         let y = parseInt(obj[0].getAttribute("y"));
+         
+         dTree.svg.transition()
+              .duration(750)
+              .call(dTree.zoom.translateTo, x, y);
+
+         populateForm(pid);
+     }
      
      treeJson = d3.json("/api/all", function(error, treeData) {
       	 dTree.init(treeData, {
@@ -202,38 +222,27 @@
 	     callbacks: {
 		 nodeClick: function(name, extra, id) {
                      let pid = extra.id;
-                     console.log(id);
                      
                      if (currentSlideId == pid) {
                          slide(0);
                          currentSlideId = -1;
                      } else {
-                         slide(40);
-                         currentSlideId = pid;
-                         let obj = $("div#node" + id).parent();
-                         let x = parseInt(obj[0].getAttribute("x")) +
-                                 window.innerWidth * 0.60 +
-                                 parseInt(obj[0].getAttribute("width"))/2;
-                         let y = parseInt(obj[0].getAttribute("y"));
-                         
-                         dTree.svg.transition()
-                              .duration(750)
-                              .call(dTree.zoom.translateTo, x, y);
-
-                         populateForm(pid);
-                     }22
+                         openPerson(pid);
+                     }
 		 },
                  nodeSorter: function(aName, aExtra, bName, bExtra) {
                      return Math.sign(Date.parse(aExtra.birth_date) - Date.parse(bExtra.birth_date));
                  },
 		 textRenderer: function(name, extra, textClass) {
-                     let markup = "<p align=\"center\" class=\"" + textClass + "\">" + name;
-                     if (extra) {
-                         markup += "<br/>b. " + extra.birth_date;
-                         if (extra.death_date) {
-                             markup += "<br/>d. " + extra.death_date;
-                         }
-                     } 
+                     if (!extra) {
+                         return "";
+                     }
+                     
+                     let markup = "<p id=\"" + extra.id + "\" align=\"center\" class=\"" + textClass + "\">" + name;
+                     markup += "<br/>b. " + extra.birth_date;
+                     if (extra.death_date) {
+                         markup += "<br/>d. " + extra.death_date;
+                     }
                      markup += "</p>";
                      
                      return markup;
