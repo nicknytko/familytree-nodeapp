@@ -29,13 +29,27 @@
          padding: 5px;
          margin: 0;
      }
+     div.git_version {
+         position: absolute;
+         bottom: 0px;
+         left: 50%;
+         transform: translateX(-50%);
+     }
     </style>
     <script src="/lodash/lodash.min.js"></script>
     <script src="/d3/d3.min.js"></script>
     <script src="/d3-dtree/dTree.min.js"></script>
+    <script src="/jquery/jquery.min.js"></script>
 </head>
 <body>
     <div id="graph"></div>
+    <div class="git_version">
+        <center>
+            <a target="_blank" href="https://github.com/nicknytko/familytree-nodeapp">
+                <small id="version"></small>
+            </a>
+        </center>
+    </div>
     <script>
      treeJson = d3.json("/api/all", function(error, treeData) {
       	 dTree.init(treeData, {
@@ -70,6 +84,9 @@
          svg.setAttribute("width", window.innerWidth);
          svg.setAttribute("height", window.innerHeight);
      }
+     $.get("/api/version", (e) => {
+         $("#version").text(e.git_small);
+     });
     </script>
 </body>
 </html>

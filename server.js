@@ -1,9 +1,14 @@
 var express = require("express"),
-      path = require("path"),
-      config = require("config"),
-      family_db = require("./family-db.js");
+    path = require("path"),
+    config = require("config"),
+    family_db = require("./family-db.js");
+
 var app = express(),
-      router = express.Router();
+    router = express.Router();
+
+var git_version = require( "child_process" )
+    .execSync( "git rev-parse HEAD" )
+    .toString( ).trim( );
 
 function modulePath(path) {
     return express.static(__dirname + "/node_modules/" + path);
@@ -21,6 +26,13 @@ router.use(express.static("public"));
 
 router.get("/api/all", (req, res) => {
     res.json(family_db.getJsonTree());
+});
+
+router.get("/api/version", (req, res) => {
+    res.json({
+        git: git_version,
+        git_small: git_version.slice(0, 7)
+    });
 });
 
 app.use(config.get("server.base_url"), router);
