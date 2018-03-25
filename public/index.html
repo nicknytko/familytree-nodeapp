@@ -126,6 +126,10 @@
      var treeMap = [];
      var currentSlideId = -1;
 
+     function isMobile() {
+         return window.innerWidth < 512;
+     }
+     
      function generateTreeMap(treeRoot) {
          treeMap[treeRoot.extra.id] = treeRoot;
          
@@ -216,7 +220,7 @@
      }
 
      function openPerson(pid) {
-         slide(40);
+         slide(isMobile() ? 100 : 40);
          currentSlideId = pid;
          console.log(pid);
          let obj = $("p#" + pid + ".nodeText").parent().parent();
@@ -238,7 +242,7 @@
              zoomInitial = d3.zoomTransform($("svg")[0]);
              $("#graph").empty();
          }
-             
+         
          dTree.init(tree, {
              target: "#graph",
              debug: true,
