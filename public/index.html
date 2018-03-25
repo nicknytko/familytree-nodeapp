@@ -59,10 +59,10 @@
          display: none;
      }
     </style>
-    <script src="/lodash/lodash.min.js"></script>
-    <script src="/d3/d3.js"></script>
-    <script src="/d3-dtree/dTree.min.js"></script>
-    <script src="/jquery/jquery.min.js"></script>
+    <script src="lodash/lodash.min.js"></script>
+    <script src="d3/d3.js"></script>
+    <script src="d3-dtree/dTree.min.js"></script>
+    <script src="jquery/jquery.min.js"></script>
 </head>
 <body>
     <div id="graph"></div>
@@ -283,7 +283,7 @@
          }
      }
      
-     treeJson = d3.json("/api/all", function(error, treeData) {
+     treeJson = d3.json("api/all", function(error, treeData) {
          tree = treeData;
          generateTreeMap(treeData[0]);
          renderTree();
@@ -295,7 +295,7 @@
          svg.setAttribute("height", window.innerHeight);
      }
      
-     $.get("/api/version", (e) => {
+     $.get("api/version", (e) => {
          $("#version").text(e.git_small);
      });
     </script>
