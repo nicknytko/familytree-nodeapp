@@ -1,4 +1,5 @@
 var express = require("express"),
+    body_parser = require("body-parser"),
     path = require("path"),
     config = require("config"),
     family_db = require("./family-db.js");
@@ -15,6 +16,9 @@ function modulePath(path) {
 }
 
 family_db.cacheJsonTree();
+
+router.use(body_parser.urlencoded( { extended: true } ));
+router.use(body_parser.json());
 
 router.use("/d3", modulePath("/d3/build/"));
 router.use("/d3-dtree", modulePath("/d3-dtree/dist/"));
@@ -38,6 +42,11 @@ router.get("/api/version", (req, res) => {
         git: git_version,
         git_small: git_version.slice(0, 7)
     });
+});
+
+router.put("/api/:id/update", (req, res) => {
+    family_db.updatePerson(req.body.id, req.body);
+    res.json({ status: "ok" });
 });
 
 app.use(config.get("server.base_url"), router);

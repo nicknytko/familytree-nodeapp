@@ -96,17 +96,58 @@
                         <option value="0">Female</option>
                     </select>
                 </div>
-                
-                <div class="form-group">
-                    <label>Birth Date</label>
-                    <input class="form-control" type="text" id="form_birth_date">
+
+                <label>Birth Date</label>
+                <div class="form-group container-fluid">
+                    <div class="row">
+                    <select class="form-control col-md-4"  id="form_birth_date_month">
+                        <option value="">Month</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                    <input type="number" class="form-control col-md-4" id="form_birth_date_day" placeholder="Day">
+                    <input type="number" class="form-control col-md-4" id="form_birth_date_year" placeholder="Year">
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label>Dead?</label>
-                    <input type="checkbox" id="form_dead"><br>
+                    <input type="checkbox" id="form_dead" onclick="showHideDeathDateSection()"><br>
+
+                    <div id="form_death_date_section" class="hidden">
                     <label>Death Date</label>
-                    <input class="form-control" type="text" id="form_death_date">
+                    <div class="form-group container-fluid">
+                        <div class="row">
+                            <select class="form-control col-md-4"  id="form_death_date_month">
+                                <option value="">Month</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                            <input type="number" class="form-control col-md-4" id="form_death_date_day" placeholder="Day">
+                            <input type="number" class="form-control col-md-4" id="form_death_date_year" placeholder="Year">
+                        </div>
+                    </div>
+                    </div>
                 </div>
 
                 <h6>Spouse</h6>
@@ -122,14 +163,26 @@
         </div>
     </div>
     <script>
+     /** @global Full family tree data */
      var tree = null;
+     /** @global Hash map, mapping tree nodes to their person id for fast lookup */
      var treeMap = [];
+     /** @global Current person that is being viewed in the sidebar */
      var currentSlideId = -1;
 
+     /**
+      * Determines if the current device view is small enough to be considered
+      * a mobile device.
+      * @return true if device has small window.
+      */
      function isMobile() {
          return window.innerWidth < 512;
      }
-     
+
+     /**
+      * Maps tree nodes to their ids for easy lookup.
+      * @param {object} treeRoot Root of the tree to start mapping from.
+      */
      function generateTreeMap(treeRoot) {
          treeMap[treeRoot.extra.id] = treeRoot;
          
@@ -145,6 +198,10 @@
          }
      }
 
+     /**
+      * Slides out the side bar.
+      * @param {number} width New width of the side bar in percent [0-100]
+      */
      function slide(width) {
          if (width > 0) {
              $("div.slide").removeClass("hidden");
@@ -156,26 +213,64 @@
          $("div.slide").css("width", width.toString() + '%');
      }
 
+     /**
+      * Takes the current metadata from the sidebar and updates the tree,
+      * also updating the person on the server if necessary. 
+      */
      function updatePerson() {
          slide(0);
 
          let person = treeMap[currentSlideId];
          let data = person.extra;
+         let createDateString = function(day, month, year) {
+             let str = year.toString() + "-";
+             if (month < 10) {
+                 str += "0";
+             }
+             str += month + "-";
+             
+             if (day < 10) {
+                 str += "0";
+             }
+             str += day;
+             return str;
+         }
          
          data.given_name = $("#form_given_name").val();
          data.last_name = $("#form_last_name").val();
          data.is_male = $("#form_gender").val() == 1 ? true : false;
-         data.birth_date = $("#form_birth_date").val();
+
+         let birth_date = createDateString(parseInt($("#form_birth_date_day").val()),
+                                           parseInt($("#form_birth_date_month").val()),
+                                           parseInt($("#form_birth_date_year").val()));
+         data.birth_date = birth_date;
+         
          data.is_dead = $("#form_dead").prop("checked");
-         data.death_date = $("#form_death_date").val();
+         if (data.is_dead) {
+             let death_date = createDateString(parseInt($("#form_death_date_day").val()),
+                                               parseInt($("#form_death_date_month").val()),
+                                               parseInt($("#form_death_date_year").val()));
+             data.death_date = death_date;
+         }
 
          person.name = data.given_name + " " + data.last_name;
          person.class = data.is_male ? "male" : "female";
-
+         console.log(JSON.stringify(person.extra));
+         $.ajax("api/" + currentSlideId + "/update", {
+             contentType: "application/json",
+             data: JSON.stringify(person.extra),
+             method: "PUT"
+         });
+         
          renderTree();
      }
 
-     function addChildToList(id, list) {
+     /**
+      * Adds a person to a DOM list
+      * @param {number} id person to add.
+      * @param {string} Name of the DOM list to add the person to.
+      */
+     function addPersonToList(id, list) {
          let child = $("<a></a>");
          child.addClass("list-group-item");
          child.addClass("list-group-item-action");
@@ -189,22 +284,59 @@
          $(list).append(child);
      }
 
+     /**
+      * Shows or hides the death_date input section, depending on the current status
+      * of the "is_dead" checkbox.
+      */
+     function showHideDeathDateSection() {
+         let show = $("#form_dead").prop("checked");
+         if (show) {
+             $("#form_death_date_section").removeClass("hidden");
+         } else {
+             $("#form_death_date_section").addClass("hidden");
+         }
+     }
+
+     /**
+      * Loads metadata from the tree and into the side bar form
+      * @param {number} id person to load.
+      */
      function populateForm(id) {
          let person = treeMap[id];
          let data = person.extra;
-
+         
          $("#form_given_name").val(data.given_name);
          $("#form_last_name").val(data.last_name);
          $("#form_gender").val(data.is_male ? 1 : 0);
-         $("#form_birth_date").val(data.birth_date);
+
+         if (data.birth_date) {
+             let birth_date = data.birth_date.split("-");   
+             $("#form_birth_date_year").val(birth_date[0]);
+             $("#form_birth_date_month").val(parseInt(birth_date[1]));
+             $("#form_birth_date_day").val(birth_date[2]);
+         }
+         
          $("#form_dead").prop("checked", data.is_dead ? true : false);
          $("#form_death_date").val(data.death_date);
 
+         if (data.is_dead) {
+             let death_date = data.death_date.split("-");   
+             $("#form_death_date_year").val(death_date[0]);
+             $("#form_death_date_month").val(parseInt(death_date[1]));
+             $("#form_death_date_day").val(death_date[2]);
+             $("#form_death_date_section").removeClass("hidden");
+         } else {
+             $("#form_death_date_section").addClass("hidden");
+             $("#form_death_date_year").val("");
+             $("#form_death_date_month").val("");
+             $("#form_death_date_day").val("");
+         }
+         
          $("#form_list_spouse").empty()
          $("#form_list_children").empty()
          
          if (data.spouse_id) {
-             addChildToList(data.spouse_id, "#form_list_spouse");
+             addPersonToList(data.spouse_id, "#form_list_spouse");
 
              let children = [];
              if (!person.marriages) {
@@ -214,15 +346,18 @@
              }
 
              for (let i = 0; i < children.length; i++) {
-                 addChildToList(children[i].extra.id, "#form_list_children");
+                 addPersonToList(children[i].extra.id, "#form_list_children");
              }
          }
      }
 
+     /**
+      * Pans to a person's SVG node and opens the sidebar, displaying their metadata.
+      * @param {number} pid person to show.
+      */
      function openPerson(pid) {
          slide(isMobile() ? 100 : 40);
          currentSlideId = pid;
-         console.log(pid);
          let obj = $("p#" + pid + ".nodeText").parent().parent();
          let x = parseInt(obj[0].getAttribute("x")) +
                  window.innerWidth * 0.60 +
@@ -236,6 +371,9 @@
          populateForm(pid);
      }
 
+     /**
+      * Re-renders the whole tree, keeping the same camera transformation if possible.
+      */
      function renderTree() {
          let zoomInitial = null;
          if ($("svg").length) {
@@ -272,7 +410,7 @@
                                   "\" align=\"center\" class=\"" +
                                   textClass + "\">" + name;
                      markup += "<br/>b. " + extra.birth_date;
-                     if (extra.death_date) {
+                     if (extra.is_dead) {
                          markup += "<br/>d. " + extra.death_date;
                      }
                      markup += "</p>";

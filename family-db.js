@@ -118,3 +118,27 @@ module.exports.cacheJsonTree = function() {
     cached_tree = [];
     recurseGenerateTree(cached_tree, config.get("tree.start_person"));
 }
+
+module.exports.updatePerson = function(id, data) {
+    let treePerson = cached_tree_map[id];
+    treePerson.extra.birth_date = data.birth_date;
+    treePerson.extra.given_name = data.given_name;
+    treePerson.extra.last_name = data.last_name;
+    treePerson.extra.is_male = data.is_male;
+    treePerson.extra.is_dead = data.is_dead;
+
+    if (treePerson.extra.is_dead) {
+        treePerson.extra.death_date = data.death_date;
+    }
+
+    treePerson.name = treePerson.extra.given_name + " " + treePerson.extra.last_name;
+    treePerson.class = (treePerson.extra.is_male ? "male" : "female");
+
+    people.update({
+        last_name: treePerson.extra.last_name,
+        given_name: treePerson.extra.given_name,
+        is_male: treePerson.extra.is_male,
+        is_dead: treePerson.extra.is_dead,
+        birth_date: treePerson.extra.birth_date,
+        death_date: treePerson.extra.death_date}, { where: { "id": id } });
+}
