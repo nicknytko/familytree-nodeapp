@@ -6,7 +6,6 @@
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <style type="text/css">
      body {
-         font: 10px sans-serif;
          overflow: hidden;
      }
      .linage {
@@ -25,9 +24,10 @@
          background-color: pink;
          border-radius: 2px;
      }
-     p {
+     p.nodeText {
          padding: 5px;
          margin: 0;
+         font: 10px sans-serif;
      }
      div.git_version {
          position: absolute;
@@ -52,6 +52,7 @@
          
          background-color: white;
          border-left: gray 1px solid;
+         font-size: 0.8em;
          z-index: 3;
      }
      .hidden {
@@ -59,7 +60,7 @@
      }
     </style>
     <script src="/lodash/lodash.min.js"></script>
-    <script src="/d3/d3.min.js"></script>
+    <script src="/d3/d3.js"></script>
     <script src="/d3-dtree/dTree.min.js"></script>
     <script src="/jquery/jquery.min.js"></script>
 </head>
@@ -75,8 +76,7 @@
     <div class="slide hidden">
         <div class="container">
             <form>
-                <button type="button" class="btn btn-outline-primary" id="task_form_back_btn" onclick="slide(0);">Back</button>
-                <button type="button" class="btn btn-outline-primary" id="task_form_update_btn">Update</button>
+                <button type="button" class="btn btn-outline-primary" id="task_form_back_btn" onclick="updatePerson();">Back</button>
                 <br><br>
 
                 <div class="form-group">
@@ -152,6 +152,25 @@
          $("div.slide").css("width", width.toString() + '%');
      }
 
+     function updatePerson() {
+         slide(0);
+
+         let person = treeMap[currentSlideId];
+         let data = person.extra;
+         
+         data.given_name = $("#form_given_name").val();
+         data.last_name = $("#form_last_name").val();
+         data.is_male = $("#form_gender").val() == 1 ? true : false;
+         data.birth_date = $("#form_birth_date").val();
+         data.is_dead = $("#form_dead").prop("checked");
+         data.death_date = $("#form_death_date").val();
+
+         person.name = data.given_name + " " + data.last_name;
+         person.class = data.is_male ? "male" : "female";
+
+         renderTree();
+     }
+
      function addChildToList(id, list) {
          let child = $("<a></a>");
          child.addClass("list-group-item");
@@ -212,15 +231,21 @@
 
          populateForm(pid);
      }
-     
-     treeJson = d3.json("/api/all", function(error, treeData) {
-      	 dTree.init(treeData, {
-	     target: "#graph",
-	     debug: true,
+
+     function renderTree() {
+         let zoomInitial = null;
+         if ($("svg").length) {
+             zoomInitial = d3.zoomTransform($("svg")[0]);
+             $("#graph").empty();
+         }
+             
+         dTree.init(tree, {
+             target: "#graph",
+             debug: true,
              width: window.innerWidth,
              height: window.innerHeight,
-	     callbacks: {
-		 nodeClick: function(name, extra, id) {
+             callbacks: {
+                 nodeClick: function(name, extra, id) {
                      let pid = extra.id;
                      
                      if (currentSlideId == pid) {
@@ -229,16 +254,19 @@
                      } else {
                          openPerson(pid);
                      }
-		 },
-                 nodeSorter: function(aName, aExtra, bName, bExtra) {
-                     return Math.sign(Date.parse(aExtra.birth_date) - Date.parse(bExtra.birth_date));
                  },
-		 textRenderer: function(name, extra, textClass) {
+                 nodeSorter: function(aName, aExtra, bName, bExtra) {
+                     return Math.sign(Date.parse(aExtra.birth_date) -
+                                      Date.parse(bExtra.birth_date));
+                 },
+                 textRenderer: function(name, extra, textClass) {
                      if (!extra) {
                          return "";
                      }
                      
-                     let markup = "<p id=\"" + extra.id + "\" align=\"center\" class=\"" + textClass + "\">" + name;
+                     let markup = "<p id=\"" + extra.id +
+                                  "\" align=\"center\" class=\"" +
+                                  textClass + "\">" + name;
                      markup += "<br/>b. " + extra.birth_date;
                      if (extra.death_date) {
                          markup += "<br/>d. " + extra.death_date;
@@ -246,11 +274,19 @@
                      markup += "</p>";
                      
                      return markup;
-		 }
-	     }
-	 });
+                 }
+             }
+         });
+
+         if (zoomInitial) {
+             dTree.svg.call(dTree.zoom.transform, zoomInitial);
+         }
+     }
+     
+     treeJson = d3.json("/api/all", function(error, treeData) {
          tree = treeData;
          generateTreeMap(treeData[0]);
+         renderTree();
      });
      
      window.onresize = function() {

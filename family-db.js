@@ -35,6 +35,7 @@ const children = database.define("children", {
 
 let promises = [people.sync(), family.sync(), children.sync()];
 var cached_tree = [];
+var cached_tree_map = [];
 
 module.exports.importTree = function(peopleData, familyData, childrenData) {
     let peoplePromises = [];
@@ -96,7 +97,6 @@ function recurseGenerateTree(tree_root, person_id) {
                         children: []
                     }];
                     person.marriages[0].spouse.extra.spouse_id = person_id;
-                    //console.log(person.marriages[0].spouse);
                     
                     tree_root.push(person);
                     children.findAll({ where: { family_id: family_result.dataValues.id } }).then(child_result => {
@@ -108,6 +108,8 @@ function recurseGenerateTree(tree_root, person_id) {
             } else {
                 tree_root.push(person);
             }
+            
+            cached_tree_map[person_id] = person;
         });
     });
 }
