@@ -97,6 +97,7 @@ function recurseGenerateTree(tree_root, person_id) {
                         children: []
                     }];
                     person.marriages[0].spouse.extra.spouse_id = person_id;
+                    cached_tree_map[spouse_id] = person.marriages[0].spouse;
                     
                     tree_root.push(person);
                     children.findAll({ where: { family_id: family_result.dataValues.id } }).then(child_result => {
